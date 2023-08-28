@@ -1,0 +1,22 @@
+- include_tasks: docker_login.yml
+  with_items: "{{huginn_registries}}"
+  tags: [huginn_login, login, docker_login]
+- shell: |
+    set -ex
+    cd "{{huginn_hostdir}}"
+    : {{huginn_dc}} build {{huginn_build_args}}
+  when:
+  - "huginn_build|copsf_asbool"
+  - "huginn_build_args|copsf_asbool"
+  tags: [huginn_login, login, docker_login]
+# ensure all images are (re) pulled
+- shell: |
+    set -ex
+    cd "{{huginn_hostdir}}"
+    {{huginn_dc}} pull {{huginn_pull_args}}
+  retries: 5
+  delay: 10
+  when:
+  - "huginn_pull|copsf_asbool"
+  tags: [huginn_pull, pull, docker_pull]
+

@@ -1,0 +1,13 @@
+---
+- include_role: {name: corpusops.roles/services_virt_docker}
+  tags: [docker_setup, docker_prerequisites]
+- include_role: {name: huginn/service_stop}
+  tags: [service, huginn_service, huginn_service_stop]
+- include_role: {name: huginn/configure}
+  tags: [configs, huginn_configure]
+- include_role: {name: huginn/docker}
+  tags: [docker_setup, docker_login, docker_pull]
+- include_role: {name: huginn/service_start}
+  tags: [service, huginn_service, huginn_service_start]
+- include_role: {name: huginn/post}
+  tags: [post]

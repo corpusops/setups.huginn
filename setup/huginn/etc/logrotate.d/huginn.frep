@@ -1,0 +1,15 @@
+/opt/huginn/var/logs/*.log
+{
+  daily
+  nodateext
+  missingok
+  copytruncate
+  rotate {{.Env.HUGINN_ROTATE_DAYS | default "365"}}
+  compress
+  delaycompress
+  notifempty
+  sharedscripts
+      postrotate
+          su huginn -s /bin/bash -c "huginn reopen" >/dev/null 2>&1
+  endscript
+}

@@ -1,0 +1,16 @@
+- include_role: {name: corpusops.roles/docker_compose_service}
+  vars:
+    _docker_compose_service:
+      project: "{{huginn_compose_project}}"
+      service_name: "{{huginn_servicename}}"
+      state: "{{huginn_stopped_state}}"
+      working_directory: "{{huginn_hostdir}}"
+      stdout: "{{huginn_stdout}}"
+      stderr: "{{huginn_stderr}}"
+  tags: [service_stop]
+- shell: |-
+    set -ex
+    if [ ! -e "{{huginn_hostdir}}/{{huginn_compose_files[0]}}" ];then exit 0;fi
+    cd {{huginn_hostdir}}
+    docker-compose down
+  tags: [service_dockercompose_stop]

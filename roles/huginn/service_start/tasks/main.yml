@@ -1,0 +1,14 @@
+- include_role: {name: corpusops.roles/docker_compose_service}
+  vars:
+    _docker_compose_service:
+      project: "{{huginn_compose_project}}"
+      service_name: "{{huginn_servicename}}"
+      state: "{{huginn_started_state}}"
+      working_directory: "{{huginn_hostdir}}"
+      stdout: "{{huginn_stdout}}"
+      stderr: "{{huginn_stderr}}"
+- shell: |-
+    set -ex
+    cd "{{huginn_hostdir}}"
+    docker-compose -p {{huginn_compose_project}} up -d
+  tags: [huginn_restart_services]

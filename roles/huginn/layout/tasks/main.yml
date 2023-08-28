@@ -1,0 +1,23 @@
+---
+- set_fact:
+    huginn_host_dirs: |
+        {% set directories = [] %}
+        {% for huginn_volume in huginn_volumes %}
+        {% set d = huginn_volume.split(':')[0] %}
+        {% set _ = directories.append(d) %}
+        {% endfor %}
+        {% set _ = directories.append(huginn_data_volume) %}
+        {{ directories | to_json }}
+- file:
+    path: "{{item}}"
+    mode: "0711"
+    state: directory
+  with_items: "{{huginn_host_dirs}}"
+- file:
+    state: directory
+    path: "{{huginn_versioned_hostdir}}"
+- file:
+    state: link
+    force: true
+    src: "{{huginn_versioned_hostdir}}"
+    path: "{{huginn_hostdir}}"

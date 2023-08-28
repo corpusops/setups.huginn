@@ -1,0 +1,29 @@
+---
+all: {vars: {huginn_servers: huginn_servers}}
+huginn:
+  children:
+    huginn_servers:
+      children:
+        huginn_prod:
+          hosts: {prod-docker-ifttt.corp.org: {}}
+          vars:
+  vars:
+    # huginn_redir_all_mails: "1"
+    huginn_tld_domain: "corp.com"
+    huginn_site_owner: "sysadmin+newhuginn@corp.com"
+    huginn_db_password: "2q1sd2f31qsd23f15478"
+    huginn_domain: huginn.corp.org
+    huginn_alt_domains: [staging-ifttt.corp.org, ifttt.corp.org]
+    huginn_web_secret_key: Zx1qs32d1f23qsd1f23qsd1f321qsd23f1qds32f123qsdf1q23sd1f32qds1f23qds1f23qsdf4
+    huginn_smtp_host: "smtp.gmail.com"
+    huginn_smtp_port: "587"
+    huginn_smtp_user: "m@a.c"
+    huginn_smtp_password: "secret"
+    huginn_smtp_starttls: "true"
+    huginn_smtp_authentication: "plain"
+    huginn_smtp_domain: "staging-ifttt.corp.org"
+    huginn_invitation_code: qs23df1qds51fq56sd4f56456
+    huginn_email_from_address: a@b.c
+    huginn_old_host: staging-ifttt.corp.org
+    huginn_old_db: huginn_production
+

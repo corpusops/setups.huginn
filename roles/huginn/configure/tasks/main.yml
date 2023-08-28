@@ -1,0 +1,5 @@
+---
+- include_role: {name: huginn/layout}
+  tags: [huginn_layout, layout]
+- include_role: {name: huginn/configs}
+  tags: [huginn_configs, configs]

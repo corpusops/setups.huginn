@@ -1,0 +1,10 @@
+---
+# APP
+- hosts: "{{huginn_servers|default('all')}}"
+  roles: [corpusops.roles/ansible_plugins]
+  tasks:
+  - when: ["huginn_lifecycle_app|default(true)"]
+    tags: ["huginn_lifecycle_app"]
+    block:
+    - include_role: {name: huginn/vars, public: true, allow_duplicates: false}
+    - include_role: {name: huginn,      public: true, allow_duplicates: false}

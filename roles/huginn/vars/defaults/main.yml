@@ -1,0 +1,282 @@
+---
+huginn_dir: "/srv/docker/{{huginn_name}}"
+huginn_versioned_hostdir: "{{huginn_basedir}}/{{huginn_version}}"
+huginn_hostdir: "{{huginn_basedir}}/current"
+huginn_services_image: corpusops/alpine-bare
+huginn_services_debian_image: corpusops/debian-bare:sid
+huginn_volumes:
+- "{{huginn_hostdir}}"
+huginn_basedir: /srv/docker/huginn
+huginn_data_volume: "{{huginn_basedir}}/data"
+huginn_vversion: "v{{huginn_version}}"
+huginn_version: "c68274384cc7e7d2ab24ef70e5280bcbd5ca57c6"
+huginn_web_version: "{{huginn_version}}"
+huginn_nginx_image: "corpusops/nginx:1.21-alpine"
+huginn_mysql_image: "corpusops/mysql:8"
+huginn_dbs_image: "{{huginn_mysql_image.replace(':', '-').replace('/', '/dbsmartbackup:')}}"
+# but also add cron & logrotate
+huginn_image: "huginn/huginn-single-process:{{huginn_version}}"
+huginn_name: huginn
+huginn_code_dir: "{{playbook_dir}}"
+huginn_tld_domain: example.com
+huginn_domain: "huginn.{{huginn_tld_domain}}"
+huginn_domains: ["ifttt.{{huginn_tld_domain}}", "huginn.{{huginn_tld_domain}}"]
+huginn_gateway: "{{ ansible_default_ipv4.address}}"
+huginn_composename: "{{huginn_name}}"
+huginn_servicename: "docker{{huginn_composename}}"
+huginn_compose_project: "{{huginn_composename}}"
+huginn_stopped_state: stopped
+huginn_started_state: started
+huginn_stdout: /dev/null
+huginn_stderr: /dev/null
+huginn_build_args: "--no-cache --pull"
+# backup could be remove in a-while when we have redeployed it everywhere
+huginn_restarted_services_default: "setup-services"
+huginn_restarted_services: "{{huginn_restarted_services_default}}"
+huginn_force_sync_ssh_user: null
+huginn_sync_ssh_user: ""
+huginn_sshargs: >-
+  {% set k = hostvars[inventory_hostname].get(
+                'ansible_ssh_private_key_file', '') %}
+  {% if k%}-o IdentityFile={{k}} -o IdentitiesOnly=yes{%endif%}
+  {% if (
+      hostvars[inventory_hostname].ansible_connection|default('ssh')
+     ) not in [ 'smart', 'local'] %}
+  {{ hostvars[inventory_hostname].ssh_args | default('') }}
+  {{ hostvars[inventory_hostname].ansible_ssh_args | default('') }}
+  {{ hostvars[inventory_hostname].ansible_ssh_common_args | default('') }}
+  {{ hostvars[inventory_hostname].ansible_ssh_extra_args | default('') }}
+  {% endif %}
+  {% if((huginn_force_sync_ssh_user) or
+        (huginn_sync_ssh_user and (huginn_force_sync_ssh_user == True))
+    )%}
+  {% set user = huginn_sync_ssh_user or ansible_user or '' %}
+  {% if user %}-l {{user}}{% endif %}
+  {% endif %}
+huginn_build: false
+huginn_pull: true
+huginn_registries: []
+#- {registry: registry.foo.net, username: foo, password: bar}
+huginn_compose_files: [docker-compose.yml]
+huginn_dc: docker-compose
+huginn_docker_env_freeform: |-
+  {{ huginn_docker_env_defaults}}
+  {{ huginn_docker_env_extra}}
+huginn_docker_env_defaults: |-
+  #
+# very small, perfect for testing purpose
+huginn_pull_args: ""
+huginn_postfix_mynetwork: "127.0.0.0/8"
+# huginn_postfix_mynetwork: "127.0.0.1/8 {{huginn_network}}.24/32"
+huginn_archiver_from: "*"
+huginn_network: 172.34.15
+huginn_listening_if: "0.0.0.0"
+huginn_listening_int_if: "127.0.0.1"
+huginn_listening_port: "80"
+huginn_listening_ssl_port: "443"
+huginn_listening_int_port: "8080"
+huginn_tz: Europe/Paris
+huginn_smtp_host: "smtp"
+huginn_smtp_port: "25"
+huginn_smtp_user: ""
+huginn_smtp_password: ""
+huginn_force_ssl: "true"
+huginn_email_from_address: ""
+huginn_localhost: ["localhost", "127.0.0.1", "0.0.0.0"]
+huginn_allowed_hosts: "{{(huginn_localhost+[huginn_domain])}}"
+huginn_alt_domains: ["alt-{{huginn_domain}}"]
+huginn_dbs_dbnames: all 
+huginn_dotenv: |-
+  {%- macro envd(k, v, t=None) %}
+  {%- if t is none%}{%set test=v%}{%else%}{%set test=t%}{%endif%}
+  {{- test and '{0}={1}'.format(k, v) or ''}}
+  {%- endmacro %}
+  # docker
+  DOCKER_BUILDKIT=1
+  COMPOSE_DOCKER_CLI_BUILD=1
+  BUILDKIT_PROGRESS=plain
+  BUILDKIT_INLINE_CACHE=1
+  DATA_DIR={{huginn_data_volume}}
+  LISTENING_IF={{huginn_listening_if}}
+  LISTENING_INT_IF={{huginn_listening_int_if}}
+  LISTENING_PORT={{huginn_listening_port}}
+  LISTENING_INT_PORT={{huginn_listening_int_port}}
+  MYSQL_IMAGE={{huginn_mysql_image}}
+  DBS_IMAGE={{huginn_dbs_image}}
+  COMPOSE_PROJECT_NAME={{huginn_composename}}
+  CONTROL_COMPOSE_FILES={{huginn_compose_files|join(' ')}}
+  COMPOSE_FILE={{huginn_compose_files|join(':')}}
+  HUGINN_NETWORK={{huginn_network}}
+  HUGINN_IMAGE={{huginn_image}}
+  NGINX_SERVER_NAME={{huginn_domain}}
+  NGINX_SERVER_ALIASES={{huginn_alt_domains}}
+  ####
+  # huginn
+  SERVICES_IMAGE={{huginn_services_image}}
+  SERVICES_DEBIAN_IMAGE={{huginn_services_debian_image}}
+  NGINX_IMAGE={{huginn_nginx_image}}
+  SENTRY_DSN={{huginn_sentry}}
+  MYSQL_HOST={{huginn_db_host}}
+  DBS_DBNAMES={{huginn_dbs_dbnames}}
+  DBS_PORT={{huginn_db_port}}
+  DBS_USER=root
+  mYSQL_PORT={{huginn_db_port}}
+  MYSQL_ROOT_PASSWORD={{huginn_db_password}}
+  MYSQL_USER={{huginn_db_user}}
+  MYSQL_PASSWORD={{huginn_db_password}}
+  MYSQL_DATABASE_NAME={{huginn_db_name}}
+  MYSQL_DATABASE={{huginn_db_name}}
+  MYSQL_PORT_3306_TCP_ADDR={{huginn_db_host}}
+  MYSQL_PASSWORD={{huginn_db_password}}
+  MYSQL_PORT_{{huginn_db_port}}_TCP_ADDR={{huginn_db_host}}
+  MYSQL_DATABASE_USERNAME=[{{huginn_db_user}}
+  MYSQL_DATABASE_DATABASE={{huginn_db_name}}
+  MYSQL_DATABASE_USERNAME={{huginn_db_user}}
+  MYSQL_DATABASE_PASSWORD={{huginn_db_password}}
+  MYSQL_USERNAME={{huginn_db_user}}
+  DATABASE_URL=mysql://{{huginn_db_user}}:{{huginn_db_password}}@{{huginn_db_host}}:{{huginn_db_port}}/{{huginn_db_name}}
+  DB_URL=mysql://{{huginn_db_user}}:{{huginn_db_password}}@{{huginn_db_host}}:{{huginn_db_port}}/{{huginn_db_name}}
+  # app
+  APP_SECRET_TOKEN={{huginn_web_secret_key}}
+  SMTP_DOMAIN={{huginn_smtp_domain}}
+  SMTP_USER_NAME={{huginn_smtp_user}}
+  SMTP_PASSWORD={{huginn_smtp_password}}
+  SMTP_SERVER={{huginn_smtp_host}}
+  SMTP_PORT={{huginn_smtp_port}}
+  SMTP_AUTHENTICATION={{huginn_smtp_authentication}}
+  SMTP_ENABLE_STARTTLS_AUTO={{huginn_smtp_starttls}}
+  EMAIL_FROM_ADDRESS={{huginn_email_from_address}}
+  DOMAIN={{huginn_domains[0]}}:{{huginn_listening_ssl_port}}
+  # PORT={{huginn_listening_ssl_port}}
+  FORCE_SSL={{huginn_force_ssl}}
+  INVITATION_CODE={{huginn_invitation_code}}
+  # Timezone. Use rake time:zones:all
+  TIMEZONE={{huginn_tz.split('/')[1]}}
+  DATABASE_RECONNECT=true
+  RAILS_ENV=production
+  # If you don't want to require new users to have an invitation code in order to sign up, set this to true.
+  SKIP_INVITATION_CODE=false
+  # If you'd like to require new users to confirm their email address after sign up, set this to true.
+  REQUIRE_CONFIRMED_EMAIL=false
+  # If REQUIRE_CONFIRMED_EMAIL is true, set this to the duration in which a user needs to confirm their email address.
+  ALLOW_UNCONFIRMED_ACCESS_FOR=2.days
+  # Duration for which the above confirmation token is valid
+  CONFIRM_WITHIN=3.days
+  # Minimum password length
+  MIN_PASSWORD_LENGTH=8
+  # Duration for which the reset password token is valid
+  RESET_PASSWORD_WITHIN=6.hours
+  # Set to 'failed_attempts' to lock user accounts for the UNLOCK_AFTER period they fail MAX_FAILED_LOGIN_ATTEMPTS login attempts. Set to 'none' to allow unlimited failed login attempts.
+  LOCK_STRATEGY=failed_attempts
+  # After how many failed login attempts the account is locked when LOCK_STRATEGY is set to failed_attempts.
+  MAX_FAILED_LOGIN_ATTEMPTS=10
+  # Can be set to 'email', 'time', 'both' or 'none'. 'none' requires manual unlocking of your users!
+  UNLOCK_STRATEGY=both
+  # Duration after which the user is unlocked when UNLOCK_STRATEGY is 'both' or 'time' and LOCK_STRATEGY is 'failed_attempts'
+  UNLOCK_AFTER=1.hour
+  # Duration for which the user will be remembered without asking for credentials again.
+  REMEMBER_FOR=4.weeks
+  # Set to 'true' if you would prefer new users to start with a default set of agents
+  IMPORT_DEFAULT_SCENARIO_FOR_ALL_USERS=true
+  # Set to true to send real emails via SMTP when running in the development Rails environment.
+  # Set to false to have emails intercepted in development and displayed at http://localhost:3000/letter_opener
+  SEND_EMAIL_IN_DEVELOPMENT=false
+  # The address from which system emails will appear to be sent.
+  ###########################
+  #      Agent Logging      #
+  ###########################
+  # Number of lines of log messages to keep per Agent
+  AGENT_LOG_LENGTH=200
+  #################################
+  #    OAuth Configuration
+  #  More information at the wiki: https://github.com/huginn/huginn/wiki/Configuring-OAuth-applications #
+  TWITTER_OAUTH_KEY=
+  TWITTER_OAUTH_SECRET=
+  THIRTY_SEVEN_SIGNALS_OAUTH_KEY=
+  THIRTY_SEVEN_SIGNALS_OAUTH_SECRET=
+  GITHUB_OAUTH_KEY=
+  GITHUB_OAUTH_SECRET=
+  TUMBLR_OAUTH_KEY=
+  TUMBLR_OAUTH_SECRET=
+  DROPBOX_OAUTH_KEY=
+  DROPBOX_OAUTH_SECRET=
+  WUNDERLIST_OAUTH_KEY=
+  WUNDERLIST_OAUTH_SECRET=
+  EVERNOTE_OAUTH_KEY=
+  EVERNOTE_OAUTH_SECRET=
+  # Set to true in development, false in production
+  USE_EVERNOTE_SANDBOX=true
+  #############################
+  #  AWS and Mechanical Turk  #
+  # AWS Credentials for MTurk
+  AWS_ACCESS_KEY_ID=your aws access key id
+  AWS_ACCESS_KEY=your aws access key
+  # Set AWS_SANDBOX to true if you're developing Huginn code.
+  AWS_SANDBOX=false
+  #########################
+  # Additional Agent gems #
+  # Agent gems can be added to Huginn by specifying them in a comma separated
+  # list, the gem version and arguments for the gem command are optional.
+  # When not providing a git(hub) repository the gem needs to be published to
+  # https://rubygems.org.
+  # Check http://bundler.io/v1.11/git.html for a list of valid arguments.
+  # Configuration examples:
+  # ADDITIONAL_GEMS=huginn_nlp_agents,test_agent
+  # ADDITIONAL_GEMS=huginn_nlp_agents(~> 0.2.1),test_agent
+  # ADDITIONAL_GEMS=huginn_nlp_agents(git: https://github.com/kreuzwerker/DKT.huginn_nlp_agents.git),test_agent
+  # ADDITIONAL_GEMS=huginn_nlp_agents(github: kreuzwerker/DKT.huginn_nlp_agents),test_agent
+  # ADDITIONAL_GEMS=huginn_nlp_agents(~> 0.2.1, git: https://github.com/kreuzwerker/DKT.huginn_nlp_agents.git),test_agent
+  ########################
+  #   Various Settings   #
+  # Specify the HTTP backend library for Faraday, commonly used by
+  # WebsiteAgent, RssAgent and PostAgent.  You can change this depending
+  # on the performance and stability you need for your service.  Any
+  # choice other than "typhoeus", "net_http", or "em_http" should
+  # require you to bundle a corresponding gem via Gemfile.
+  FARADAY_HTTP_BACKEND=typhoeus
+  # Specify the default User-Agent header value for HTTP requests made
+  # by Agents that allow overriding the User-Agent header value.
+  DEFAULT_HTTP_USER_AGENT=Huginn - https://github.com/huginn/huginn
+  # Enable this setting to allow insecure Agents like the ShellCommandAgent.  Only do this
+  # when you trust everyone using your Huginn installation.
+  ENABLE_INSECURE_AGENTS=false
+  # Enable this setting to allow second precision schedule in
+  # SchedulerAgent.  By default, the use of the "second" field is
+  # restricted so that any value other than a single zero (which means
+  # "on the minute") is disallowed to prevent abuse of service.
+  ENABLE_SECOND_PRECISION_SCHEDULE=false
+  # Specify the scheduler frequency in seconds (default: 0.3).
+  # Increasing this value will help reduce the use of system resources
+  # at the expense of time accuracy.
+  SCHEDULER_FREQUENCY=0.3
+  # Specify the frequency with which the scheduler checks for and cleans up expired events.
+  # You can use `m` for minutes, `h` for hours, and `d` for days.
+  EVENT_EXPIRATION_CHECK=6h
+  # Use Graphviz for generating diagrams instead of using Google Chart
+  # Tools.  Specify a dot(1) command path built with SVG support
+  # enabled.
+  #USE_GRAPHVIZ_DOT=dot
+  # Default layout for agent flow diagrams generated by Graphviz.
+  # Choose from `circo`, `dot` (default), `fdp`, `neato`, `osage`,
+  # `patchwork`, `sfdp`, or `twopi`.  Note that not all layouts are
+  # supported by Graphviz depending on the build options.
+  #DIAGRAM_DEFAULT_LAYOUT=dot
+  # Number of failed jobs to keep in the database
+  FAILED_JOBS_TO_KEEP=100
+  # Maximum runtime of background jobs in minutes
+  DELAYED_JOB_MAX_RUNTIME=2
+  DELAYED_JOB_SLEEP_DELAY=10
+  OLD_MYSQL_DATABASE={{huginn_old_db}}
+  OLD_HUGINN_HOST={{huginn_old_host}}
+  OLD_HUGINN_PATH=/srv/projects/huginn/project
+huginn_web_secret_key: "supersecret164644613156465456461654646546556"
+huginn_old_db: ""
+huginn_old_host: ""
+huginn_db_host: db
+huginn_db_port: 3306
+huginn_db_name: db
+huginn_db_user: huginn
+huginn_db_password: huginn
+huginn_dotenv_extra: ""
+huginn_docker_env_extra: ""
+huginn_sentry: ""
